@@ -1,0 +1,25 @@
+# Optimize the api-gateway Docker image by layering the build.
+#	1. instead of OpenJdk, use Eclipse JRE --> this reduces size of image
+#	2. layer the image into multiple layers so that builds only layers which are modified --> this reduces time to build image
+#        E.g. if only  dependency version is modified, then changes are done only to dependencies/ folder
+		
+# create alias for eclipse-temurin-jre
+FROM eclipse-temurin:eclipse-temurin:17.0.4.1_1-jre as builder
+# create folder extracted/
+WORKDIR extracted
+ADD target/*.jar app.jar
+
+# Stage 1: User layertools and run java command to extract all layers from Spring boot application and store them inside 'extracted/' folder separately as dependencies/, spring-boot-loader/, snapshot-dependencies/, and application source code and properties.
+RUN java -Djarmode=layertools -jar app.jar extract
+
+# Stage 2: copy the extracted layers into a new folder called application/
+FROM eclipse-temurin:17.0.4.1_1-jre
+WORKDIR application
+COPY --from=builder extracted/dependencies/ ./
+COPY --from=builder extracted/spring-boot-loader/ ./
+COPY --from=builder extracted/snapshot-dependencies/ ./
+COPY --from=builder extracted/application/ ./
+
+# Start the jar file hosted at 8080
+EXPOSE 8080
+ENTRYPOINT ["java","org.springframework.boot.loader.JarLauncher"]

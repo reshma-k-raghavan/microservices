@@ -1,84 +1,129 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.shoppingcart</groupId>
-  <artifactId>microservices</artifactId>
-  <version>0.0.1</version>
-  <packaging>pom</packaging>
-  <!-- This parent was moved from child modules -->
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.1.5</version>
-    <relativePath/>
-    <!-- lookup parent from repository -->
-  </parent>
-  <properties>
-    <java.version>17</java.version>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <spring-cloud.version>2022.0.4</spring-cloud.version>
-  </properties>
-  <modules>
-    <module>product-service</module>
-    <module>order-service</module>
-    <module>inventory-service</module>
-    <module>discovery-server</module>
-    <module>api-gateway</module>
-    <module>notification-service</module>
-  </modules>
-  <dependencies>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-  </dependencies>
-  <!-- To avoid specifying the versions of individual module dependencies, use
-	BOM (Bill-Of-Materials) files. It is similar to a Parent pom -->
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>org.testcontainers</groupId>
-        <artifactId>testcontainers-bom</artifactId>
-        <version>1.19.2</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.springframework.cloud</groupId>
-        <artifactId>spring-cloud-dependencies</artifactId>
-        <version>${spring-cloud.version}</version>
-        <type>pom</type>
-        <scope>import</scope>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-        <configuration>
-          <image>
-            <builder>paketobuildpacks/builder-jammy-base:latest</builder>
-          </image>
-          <excludes>
-            <exclude>
-              <groupId>org.projectlombok</groupId>
-              <artifactId>lombok</artifactId>
-            </exclude>
-          </excludes>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>com.shoppingcart</groupId>
+	<artifactId>microservices</artifactId>
+	<version>0.0.1</version>
+	<packaging>pom</packaging>
+	<!-- This parent was moved from child modules -->
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.1.5</version>
+		<relativePath />
+		<!-- lookup parent from repository -->
+	</parent>
+	
+	<!-- On running this pom from eclipse with maven: mvn clean install, target jar files will be generated. -->
+	<!-- On running this pom from command-line by passing jib:build goal as shown below, docker images for all microservices will be generated. -->
+	<!-- cmd> mvn clean compile "-DcmdRegistryUser=testuser" jib:build -Djib.to.auth.username=testuser -Djib.to.auth.password=testpassword -Djib.from.auth.username=testuser -Djib.from.auth.password=testpassword -->
+	
+	<properties>
+		<java.version>17</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<spring-cloud.version>2022.0.4</spring-cloud.version>
+		<!-- The maven property value is passed from command line to set the <image> url. -->
+		<registryUser>${cmdRegistryUser}</registryUser>
+	</properties>
+	<modules>
+		<module>product-service</module>
+		<module>order-service</module>
+		<module>inventory-service</module>
+		<module>discovery-server</module>
+		<module>api-gateway</module>
+		<module>notification-service</module>
+	</modules>
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-web</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+	<!-- To avoid specifying the versions of individual module dependencies, use BOM (Bill-Of-Materials) files. It is similar to a Parent pom -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-bom</artifactId>
+				<version>1.19.2</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.cloud</groupId>
+				<artifactId>spring-cloud-dependencies</artifactId>
+				<version>${spring-cloud.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.springframework.boot</groupId>
+				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<image>
+						<builder>paketobuildpacks/builder-jammy-base:latest</builder>
+					</image>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<!-- Plugin to auto generate an image file for all the module projects included in the root microservices project by inheriting from a base image inside <from> tag (E.g. Eclipse JRE image). And publishes the resulting project image to the destination registry specified inside <to> tag (E.g. Docker Hub) -->
+			<plugin>
+				<groupId>com.google.cloud.tools</groupId>
+				<artifactId>jib-maven-plugin</artifactId>
+				<version>3.4.0</version>
+				<configuration>
+					<from>
+						<!-- To pull from local Registry: use: <image>docker://eclipse-temurin:17.0.4.1_1-jre</image> -->
+						<image>eclipse-temurin:17.0.4.1_1-jre</image>
+						<!-- username and password is passed from command line: -Djib.to.auth.username=testuser -Djib.to.auth.password=testpassword. It can also be set using environment variables. Use: ${env.username} -->
+						<!--
+						<auth>
+							<username>testuser</username>
+							<password>testpassword</password>
+						</auth>
+						-->
+					</from>
+					<to>
+						<!-- copy image to Docker Hub. Specify Docker Registry username, password while running the jib:build command. Name of image file is taken from project.artifactId -->
+						<image>
+							registry.hub.docker.com/${registryUser}/${project.artifactId}</image>
+						<!-- Tag is used to generate image name based on version. E.g. username/api-gateway:0.0.1 If below tag is not specified, image will be created with default tag: latest. E.g. username/api-gateway:latest -->
+						<tags>
+							<tag>
+								${project.version}
+							</tag>
+						</tags>
+						<!-- username and password is passed from command line: -Djib.from.auth.username=testuser -Djib.from.auth.password=testpassword. It can also be set using environment variables. Use: ${env.username} -->
+						<!--
+						<auth>
+							<username>testuser</username>
+							<password>testpassword</password>
+						</auth>
+						-->
+					</to>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 </project>
