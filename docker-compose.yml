@@ -1,7 +1,137 @@
 ---
 version: '3'
 services:
-# zookeeper instance to orchestrate the kafka cluster
+
+  ## Postgres instance for order-service
+  ## Postgres Docker Compose Config is being used instead of MySQL for order-service. 
+  ## Named volumes are used to persist the docker container's DB data to host-machine: All data inside docker db folder: /data/postgres will be saved on host-machine project folder: ./postgres-order , when docker shuts down.
+  ## Default postgres port is 5432. To modify it to 5431, use "-p 5431", and expose 5431 on host as well.
+  ## And keep the Postgres service running always.
+  ## cmd> docker run -it -p 5431:5431 --name postgres-order -e POSTGRES_DB="order-service" postgres
+  ## Rest of the client-side properties like Postgres driver-class-name, dialect etc. are defined in order-service application-docker.properties file.
+  postgres-order:
+    container_name: postgres-order
+    image: postgres:14.10-alpine3.18
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - ./postgres-order:/data/postgres
+    command: -p 5431
+    expose:
+      - "5431"
+    ports:
+      - "5431:5431"
+    restart: unless-stopped
+
+
+
+  ## Postgres instance for inventory-service
+  ## Here, postgres is running on default port: 5432
+  ## Rest of the client-side properties like Postgres driver-class-name, dialect etc. are defined in inventory-service application-docker.properties file.
+  postgres-inventory:
+    container_name: postgres-inventory
+    image: postgres:14.10-alpine3.18
+    environment:
+      POSTGRES_DB: inventory_db
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - ./postgres-inventory:/data/postgres
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+
+
+  ## Mongo Docker Compose Config
+  mongo:
+    container_name: mongo
+    image: mongo:7.0.4
+    restart: unless-stopped
+    expose:
+      - "27017"
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./mongo-product:/data/db
+
+
+
+  # Keycloak MySQL DB Docker Compose Config, where mysql is used for storing keycloak data
+  # Persist data from docker's /var/lib/mysql to ./mysql-keycloak when docker shuts down
+  keycloak-mysql:
+    container_name: keycloak-mysql
+    image: mysql:8.0.35-debian
+    volumes:
+      - ./mysql-keycloak:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: keycloak_db
+      MYSQL_USERNAME: root
+      MYSQL_PASSWORD: password
+    ports:   	  
+     - "3306:3306"
+
+
+  ## Keycloak Docker Compose Config
+  ## This service requires previous service: keycloak-mysql to be running
+  ## cmd> docker run --import-realm quay.io/keycloak/keycloak start-dev
+  ##
+  ## --import-realm command will import Keycloak realm metadata from hostmachine path file: ./realms/realm-export.json into docker's Keycloak instance 
+  ##    Create folder: ./realms/ in the microservices project root. And copy realm-export.json file into it.
+  ## Workaround to generate realm-export.json file: 
+  ##    Run the keycloak docker image  from cmd:
+  ##    Install Keycloak through docker image: cmd> docker run -p 8181:8080 -e KEYCLOAK_ADMIN=root -e KEYCLOAK_ADMIN_PASSWORD=password quay.io/keycloak/keycloak:18.0.0 start-dev
+  ##    1. Open Keycloak admin console: localhost:8181/
+  ##    2. Manually create a realm, client, and configuration in Keycloak. 
+  ##       1. Click on Administration Console.
+  ##       2. Login using root/password
+  ##       3. Under master realm, create a new realm
+  ##               Name: spring-boot-microservices-realm
+  ##       4. Click on Clients in left menu. Create Client: 
+  ##               General Settings:
+  ##                   Client type: OpenID Connect
+  ##                   Client ID: spring-cloud-client
+  ##               Capability config:
+  ##                   Client authentication: On                  // access type: confidential
+  ##                   Authorization: Off
+  ##                   Authentication flow:
+  ##                         Standard Flow: Off                   // uses authorization code
+  ##                         Direct Access Grant: Off             // OAuth2 Clients can get direct access to Keycloak user credentials
+  ##                         Service Accounts Roles Enabled: On   // Enables client credentials grant
+  ##       5. Click Save
+  ##   3. From Left Menu -> Select from drop-down: spring-boot-microservices-realm
+  ##   4. Click Realm Settings -> Action -> Click Partial Export -> Select Include gorups and roles. Select Include clients -> Export
+  ##   5. Save as realm-export.json to project folder: ./realms/realm-export.json
+  ##      This realm will be imported while creating a new instance of keycloak in docker. The realm settings for: 'spring-boot-microservices-realm' and client configuration for: 'spring-cloud-client' will be available as well.
+  keycloak:
+    container_name: keycloak
+    image: quay.io/keycloak/keycloak:18.0.0
+    command: [ "start-dev", "--import-realm" ]
+    environment:
+      DB_VENDOR: MYSQL
+      DB_ADDR: mysql
+      DB_PORT: 3306
+      DB_DATABASE: keycloak_db
+      DB_USER: root
+      DB_PASSWORD: password
+      KEYCLOAK_ADMIN: root
+      KEYCLOAK_ADMIN_PASSWORD: password
+    expose:
+      - "8181"
+    ports:
+      - "8181:8080"
+    volumes:
+      - ./realms/:/opt/keycloak/data/import/
+    depends_on:
+      - keycloak-mysql
+
+
+  ## zookeeper instance to orchestrate the kafka cluster
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
     container_name: zookeeper
@@ -12,7 +142,7 @@ services:
       # interval during which zookeper will send heartbeat messages - every 2s
       ZOOKEEPER_TICK_TIME: 2000				
 
-# apache kafka broker instance
+  ## apache kafka broker instance
   broker:
     image: confluentinc/cp-kafka:7.0.1
     container_name: broker
@@ -30,3 +160,99 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+
+  ## Zipkin Distributed Tracing Tool Docker Compose Config
+  zipkin:
+    image: openzipkin/zipkin:3
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+
+  ## Eureka Dscovery Server. Whenever container starts up, pull the image and run it always.
+  ## It requires Zipkin to be running in order to be started
+  discovery-server:
+    image: reshmakr/discovery-server:0.0.1
+    container_name: discovery-server
+    pull_policy: always
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - zipkin
+
+  ## API Gateway Service Docker Compose Config
+  api-gateway:
+    image: reshmakr/api-gateway:0.0.1
+    container_name: api-gateway
+    pull_policy: always
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=TRACE
+    depends_on:
+      - zipkin
+      - discovery-server
+      - keycloak
+
+  ## Product Service Docker Compose Config
+  ## Product service will be accessed through api-gateway port:8080.  http://localhost:8080/api/product
+  ## All properties will be looked up from application-docker.properties. For missing properties, default values will be taken from application.properties file.
+  product-service:
+    image: reshmakr/product-service:0.0.1
+    container_name: product-service
+    pull_policy: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - mongo
+      - discovery-server
+      - api-gateway
+
+  ## Order Service Docker Compose Config
+  ## Order service will be accessed through api-gateway port:8080.  http://localhost:8080/api/order
+  ## All properties will be looked up from application-docker.properties. For missing properties, default values will be taken from application.properties file.
+  order-service:
+    image: reshmakr/order-service:0.0.1
+    container_name: order-service
+    pull_policy: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order:5431/order_db
+    depends_on:
+      - postgres-order
+      - broker
+      - zipkin
+      - discovery-server
+      - api-gateway
+
+  ## Inventory Service Docker Compose Config
+  ## Inventory service will be accessed through api-gateway port:8080.  http://localhost:8080/api/inventory
+  ## All properties will be looked up from application-docker.properties. For missing properties, default values will be taken from application.properties file.
+  inventory-service:
+    image: reshmakr/inventory-service:0.0.1
+    container_name: inventory-service
+    pull_policy: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory:5432/inventory_db
+    depends_on:
+      - postgres-inventory
+      - discovery-server
+      - api-gateway
+
+  ## Notification Service Docker Compose Config
+  ## All properties will be looked up from application-docker.properties. For missing properties, default values will be taken from application.properties file.
+  notification-service:
+    image: reshmakr/notification-service:0.0.1
+    container_name: notification-service
+    pull_policy: always
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - broker
+      - zipkin
+      - discovery-server
+      - api-gateway
+  

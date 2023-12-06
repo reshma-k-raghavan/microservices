@@ -9,6 +9,7 @@
 	<artifactId>api-gateway</artifactId>
 	<name>api-gateway</name>
 	<url>http://maven.apache.org</url>
+	<description>Spring Cloud API Gateway microservice for Shopping Cart app</description>
 
 	<parent>
 		<groupId>com.shoppingcart</groupId>

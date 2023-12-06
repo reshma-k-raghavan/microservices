@@ -9,6 +9,7 @@
 	<artifactId>discovery-server</artifactId>
 	<name>discovery-server</name>
 	<url>http://maven.apache.org</url>
+	<description>Spring Cloud Eureka Discovery Server microservice for shopping cart app</description>
 
 	<parent>
 		<groupId>com.shoppingcart</groupId>

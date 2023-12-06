@@ -6,7 +6,7 @@
 	<groupId>com.ms</groupId>
 	<artifactId>product-service</artifactId>
 	<name>product-service</name>
-	<description>A microservice for Products</description>
+	<description>Microservice for Products of a Shopping Cart app using Spring Cloud</description>
 
 	<!-- Removed spring-boot-starter-parent and added microservices parent -->
 	<parent>
