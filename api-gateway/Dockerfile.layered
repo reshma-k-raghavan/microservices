@@ -20,6 +20,6 @@ COPY --from=builder extracted/spring-boot-loader/ ./
 COPY --from=builder extracted/snapshot-dependencies/ ./
 COPY --from=builder extracted/application/ ./
 
-# Start the jar file hosted at 8080
-EXPOSE 8080
+# Start the jar file hosted at 8083
+EXPOSE 8083
 ENTRYPOINT ["java","org.springframework.boot.loader.JarLauncher"]

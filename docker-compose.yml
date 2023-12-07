@@ -85,8 +85,8 @@ services:
   ##    Create folder: ./realms/ in the microservices project root. And copy realm-export.json file into it.
   ## Workaround to generate realm-export.json file: 
   ##    Run the keycloak docker image  from cmd:
-  ##    Install Keycloak through docker image: cmd> docker run -p 8181:8080 -e KEYCLOAK_ADMIN=root -e KEYCLOAK_ADMIN_PASSWORD=password quay.io/keycloak/keycloak:18.0.0 start-dev
-  ##    1. Open Keycloak admin console: localhost:8181/
+  ##    Install Keycloak through docker image: cmd> docker run -p 8080:8080 -e KEYCLOAK_ADMIN=root -e KEYCLOAK_ADMIN_PASSWORD=password quay.io/keycloak/keycloak:18.0.0 start-dev
+  ##    1. Open Keycloak admin console: localhost:8080/
   ##    2. Manually create a realm, client, and configuration in Keycloak. 
   ##       1. Click on Administration Console.
   ##       2. Login using root/password
@@ -105,7 +105,7 @@ services:
   ##                         Service Accounts Roles Enabled: On   // Enables client credentials grant
   ##       5. Click Save
   ##   3. From Left Menu -> Select from drop-down: spring-boot-microservices-realm
-  ##   4. Click Realm Settings -> Action -> Click Partial Export -> Select Include gorups and roles. Select Include clients -> Export
+  ##   4. Click Realm Settings -> Action -> Click Partial Export -> Select Include groups and roles. Select Include clients -> Export
   ##   5. Save as realm-export.json to project folder: ./realms/realm-export.json
   ##      This realm will be imported while creating a new instance of keycloak in docker. The realm settings for: 'spring-boot-microservices-realm' and client configuration for: 'spring-cloud-client' will be available as well.
   keycloak:
@@ -121,10 +121,8 @@ services:
       DB_PASSWORD: password
       KEYCLOAK_ADMIN: root
       KEYCLOAK_ADMIN_PASSWORD: password
-    expose:
-      - "8181"
     ports:
-      - "8181:8080"
+      - "8080:8080"
     volumes:
       - ./realms/:/opt/keycloak/data/import/
     depends_on:
@@ -186,8 +184,10 @@ services:
     image: reshmakr/api-gateway:0.0.1
     container_name: api-gateway
     pull_policy: always
+    expose:
+      - "8083"
     ports:
-      - "8080:8080"
+      - "8083:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY=TRACE
