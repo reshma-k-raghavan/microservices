@@ -124,7 +124,7 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./realms/:/opt/keycloak/data/import/
+      - ./realms/realm-export.json:/opt/keycloak/data/import/realm-export.json
     depends_on:
       - keycloak-mysql
 
@@ -168,6 +168,7 @@ services:
 
   ## Eureka Dscovery Server. Whenever container starts up, pull the image and run it always.
   ## It requires Zipkin to be running in order to be started
+  ## Profile is set as docker. All properties will be looked up from application-docker.properties. For missing properties, default values will be taken from application.properties file.
   discovery-server:
     image: reshmakr/discovery-server:0.0.1
     container_name: discovery-server
@@ -180,6 +181,7 @@ services:
       - zipkin
 
   ## API Gateway Service Docker Compose Config
+  ## Profile is set as docker. All properties will be looked up from application-docker.properties. For missing properties, default values will be taken from application.properties file.
   api-gateway:
     image: reshmakr/api-gateway:0.0.1
     container_name: api-gateway
@@ -198,7 +200,7 @@ services:
 
   ## Product Service Docker Compose Config
   ## Product service will be accessed through api-gateway port:8080.  http://localhost:8080/api/product
-  ## All properties will be looked up from application-docker.properties. For missing properties, default values will be taken from application.properties file.
+  ## Profile is set as docker. All properties will be looked up from application-docker.properties. For missing properties, default values will be taken from application.properties file.
   product-service:
     image: reshmakr/product-service:0.0.1
     container_name: product-service
